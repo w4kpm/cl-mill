@@ -3,10 +3,10 @@
   x y)
 
 (defun 2d-point-equal (p1 p2 &optional (epsilon 0))
-	(and (<= (abs (- (2d-point-x p1)
-									 (2d-point-x p2))) epsilon)
-			 (<= (abs (- (2d-point-y p1)
-									 (2d-point-y p2))) epsilon)))
+  (and (<= (abs (- (2d-point-x p1)
+		   (2d-point-x p2))) epsilon)
+       (<= (abs (- (2d-point-y p1)
+		   (2d-point-y p2))) epsilon)))
 							 
 
 (defstruct line
@@ -133,30 +133,35 @@
 	
 
 (defun circle-through-3-points (p1 p2 p3)
-  (when (or (= (- (2d-point-x p1) (2d-point-x p2)) 0)
-	    (= (- (2d-point-x p2) (2d-point-x p3)) 0))
-    #+nil(format t "swap~%")
-    (swap p2 p3))
-  (let ((x1 (2d-point-x p1))
-	(y1 (2d-point-y p1))
-	(x2 (2d-point-x p2))
-	(y2 (2d-point-y p2))
-	(x3 (2d-point-x p3))
-	(y3 (2d-point-y p3)))
-    #+nil(format t "x1: ~A y1: ~A~%x2: ~A y2: ~A~%x3: ~A y3: ~A~%"
-	    x1 y1 x2 y2 x3 y3)
-    (let* ((ma (/ (- y2 y1) (- x2 x1)))
-	   (mb (/ (- y3 y2) (- x3 x2)))
-	   (cx (/ (+ (* ma mb (- y1 y3))
-		     (* mb (+ x1 x2))
-		     (- (* ma (+ x2 x3))))
-		  (* 2 (- mb ma))))
-	   (cy (if (= mb 0)
-		   (+ (* (- (/ 1 ma)) (- cx (/ (+ x1 x2) 2)))
-		      (/ (+ y1 y2) 2))
-		   (+ (* (- (/ 1 mb)) (- cx (/ (+ x2 x3) 2)))
-		      (/ (+ y2 y3) 2)))))
-      (make-2d-point :x cx :y cy))))
+  (if (or (2d-point-equal p1 p2 .01)
+	  (2d-point-equal p2 p3 .01)
+	  (2d-point-equal p1 p3 .01))
+      nil
+      (progn 
+	(when (or (= (- (2d-point-x p1) (2d-point-x p2)) 0)
+		  (= (- (2d-point-x p2) (2d-point-x p3)) 0))
+	  #+nil(format t "swap~%")
+	  (swap p2 p3))
+	(let ((x1 (2d-point-x p1))
+	      (y1 (2d-point-y p1))
+	      (x2 (2d-point-x p2))
+	      (y2 (2d-point-y p2))
+	      (x3 (2d-point-x p3))
+	      (y3 (2d-point-y p3)))
+	  #+nil(format t "x1: ~A y1: ~A~%x2: ~A y2: ~A~%x3: ~A y3: ~A~%"
+		       x1 y1 x2 y2 x3 y3)
+	  (let* ((ma (/ (- y2 y1) (- x2 x1)))
+		 (mb (/ (- y3 y2) (- x3 x2)))
+		 (cx (/ (+ (* ma mb (- y1 y3))
+			   (* mb (+ x1 x2))
+			   (- (* ma (+ x2 x3))))
+			(* 2 (- mb ma))))
+		 (cy (if (= mb 0)
+			 (+ (* (- (/ 1 ma)) (- cx (/ (+ x1 x2) 2)))
+			    (/ (+ y1 y2) 2))
+			 (+ (* (- (/ 1 mb)) (- cx (/ (+ x2 x3) 2)))
+			    (/ (+ y2 y3) 2)))))
+	    (make-2d-point :x cx :y cy))))))
 
 (defun interpolate-line (p1 p2 time)
   (let ((x1 (2d-point-x p1))
@@ -166,13 +171,16 @@
     (make-2d-point :x (+ x1 (* time (- x2 x1)))
 		   :y (+ y1 (* time (- y2 y1))))))
 
+
+
 (defun bezier-biarc (bezier)
   (with-slots (a u v b) bezier
     (let* ((inter (line-intersection a u b v))
-					 (g (when inter (incenter a inter b))))
+	   (g (when inter (incenter a inter b))))
       (when (null inter)
-				(warn "no intersection of bezier control lines: ~A~%" bezier))
-      (when g (circle-through-3-points a b g)))))
+	(warn "no intersection of bezier control lines: ~A ~A ~%" bezier g))
+      (when g 
+	(circle-through-3-points a b g)))))
 
 (defun bezier-biarc-angle (bezier)
   (with-slots (a b) bezier
@@ -216,8 +224,10 @@
 	       :b (point-+ b1 b2))))
 
 (defun point-/ (p a)
-  (2dp (/ (2d-point-x p) a)
-       (/ (2d-point-y p) a)))
+  (if (eql a 0.0)
+      (2dp 0 0)
+      (2dp (/ (2d-point-x p) a)
+	   (/ (2d-point-y p) a))))
 
 (defun point-* (p a)
   (2dp (* (2d-point-x p) a)
@@ -225,7 +235,7 @@
 
 (defun normalize-vector (s1)
   (with-slots (a b) s1
-    (point-/ (point-- b a) (line-length s1))))
+	(point-/ (point-- b a) (line-length s1))))
 
 (defun angle-2-segments (s1 s2)
   (acos (max -1 (min 1 (dot-product (normalize-vector s1)
