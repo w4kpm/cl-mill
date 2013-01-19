@@ -212,7 +212,6 @@
 	     (progn
 	       (interpret-svg-moveto (svg-absolute-x (first args))
 				     (svg-absolute-y (second args)))))
-	 
 	 (loop for args2 on args by #'(lambda (x) (nthcdr 6 x))
 	    collect 
 	      (interpret-svg-curveto (svg-absolute-x (first args2))
@@ -310,11 +309,12 @@
 		       (push cur-path res)
 		       (setf cur-path (list))))
 		 finally  (progn
+			    ;; don't implicitly close path, didn't work nice for me.
 			    ;;														(format t "closing ~A~%" commands)
-			    (let ((move (interpret-svg-path-move "z" nil)))
-			      (if (listp move)
-				  (setf cur-path (nconc cur-path move))
-				  (setf cur-path (nconc cur-path (list move)))))
+;			    (let ((move (interpret-svg-path-move "z" nil)))
+;			      (if (listp move)
+;				  (setf cur-path (nconc cur-path move))
+;				  (setf cur-path (nconc cur-path (list move)))))
 			    (push cur-path res)
 			    (setf cur-path (list))
 			    (setf *svg-first-move* t))
