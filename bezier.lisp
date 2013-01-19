@@ -351,6 +351,7 @@
 																								 (t (list x)))) curve)))
 
 (defun simplify-segments (list)
+  """ remove any really small curves and replace them with line segments"
   (loop for seg in list
      if (and (typep seg 'arc) (< (object-length seg) 2))
      collect (make-line :a (arc-a seg) :b (arc-b seg))
